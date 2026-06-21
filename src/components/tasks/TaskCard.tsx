@@ -22,39 +22,35 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, view = 'list' 
   const overdue = isOverdue(task);
   const dueToday = isDueToday(task);
 
-  if (view === 'compact') {
-    return (
-      <div className={cn(
-        'flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-200',
-        'bg-white dark:bg-slate-800 hover:shadow-sm',
-        overdue && !task.isCompleted ? 'border-red-200 dark:border-red-900/40' : 'border-slate-100 dark:border-slate-700',
-        task.isCompleted && 'opacity-60'
-      )}>
-        <button onClick={() => toggleTask(task.id)} className="flex-shrink-0">
-          {task.isCompleted
-            ? <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-            : <Circle className="h-5 w-5 text-slate-300 hover:text-indigo-500 transition-colors" />
-          }
-        </button>
-        <div className="flex-1 min-w-0">
-          <p className={cn('text-sm font-medium text-slate-800 dark:text-slate-200 truncate', task.isCompleted && 'line-through text-slate-400')}>{task.title}</p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="p-1 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            aria-label="Delete task"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-          <span className="text-xs text-slate-400">{getDueDateLabel(task.dueDate)}</span>
-          <span className={cn('h-2 w-2 rounded-full flex-shrink-0', PRIORITY_CONFIG[task.priority].bg.replace('bg-', 'bg-'))} style={{ backgroundColor: PRIORITY_CONFIG[task.priority].color }} />
-        </div>
+  const content = view === 'compact' ? (
+    <div className={cn(
+      'flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-200',
+      'bg-white dark:bg-slate-800 hover:shadow-sm',
+      overdue && !task.isCompleted ? 'border-red-200 dark:border-red-900/40' : 'border-slate-100 dark:border-slate-700',
+      task.isCompleted && 'opacity-60'
+    )}>
+      <button onClick={() => toggleTask(task.id)} className="flex-shrink-0">
+        {task.isCompleted
+          ? <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          : <Circle className="h-5 w-5 text-slate-300 hover:text-indigo-500 transition-colors" />
+        }
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className={cn('text-sm font-medium text-slate-800 dark:text-slate-200 truncate', task.isCompleted && 'line-through text-slate-400')}>{task.title}</p>
       </div>
-    );
-  }
-
-  return (
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="p-1 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+          aria-label="Delete task"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+        <span className="text-xs text-slate-400">{getDueDateLabel(task.dueDate)}</span>
+        <span className={cn('h-2 w-2 rounded-full flex-shrink-0', PRIORITY_CONFIG[task.priority].bg.replace('bg-', 'bg-'))} style={{ backgroundColor: PRIORITY_CONFIG[task.priority].color }} />
+      </div>
+    </div>
+  ) : (
     <>
       <div className={cn(
         'group relative bg-white dark:bg-slate-800 rounded-2xl border transition-all duration-200',
@@ -184,7 +180,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, view = 'list' 
           </div>
         </div>
       </div>
+    </>
+  );
 
+  return (
+    <>
+      {content}
       <ConfirmModal
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}

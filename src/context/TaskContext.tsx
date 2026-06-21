@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { Task, CreateTaskInput, UpdateTaskInput, TaskFilters, Category, CreateCategoryInput, ActivityLog, Notification } from '../types';
-import { MOCK_TASKS, MOCK_CATEGORIES, MOCK_ACTIVITY_LOGS, MOCK_NOTIFICATIONS } from '../lib/mockData';
+import { MOCK_USER, MOCK_TASKS, MOCK_CATEGORIES, MOCK_ACTIVITY_LOGS, MOCK_NOTIFICATIONS } from '../lib/mockData';
+import { DEFAULT_CATEGORIES } from '../lib/constants';
 import { generateId, filterTasks } from '../lib/utils';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -205,13 +206,35 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch {
           dispatch({
             type: 'LOAD_DATA',
-            payload: { tasks: MOCK_TASKS, categories: MOCK_CATEGORIES, activityLogs: MOCK_ACTIVITY_LOGS, notifications: MOCK_NOTIFICATIONS },
+            payload: user.id === MOCK_USER.id
+              ? { tasks: MOCK_TASKS, categories: MOCK_CATEGORIES, activityLogs: MOCK_ACTIVITY_LOGS, notifications: MOCK_NOTIFICATIONS }
+              : {
+                tasks: [],
+                categories: DEFAULT_CATEGORIES.map(category => ({
+                  ...category,
+                  userId: user.id,
+                  createdAt: new Date().toISOString(),
+                })),
+                activityLogs: [],
+                notifications: [],
+              },
           });
         }
       } else {
         dispatch({
           type: 'LOAD_DATA',
-          payload: { tasks: MOCK_TASKS, categories: MOCK_CATEGORIES, activityLogs: MOCK_ACTIVITY_LOGS, notifications: MOCK_NOTIFICATIONS },
+          payload: user.id === MOCK_USER.id
+            ? { tasks: MOCK_TASKS, categories: MOCK_CATEGORIES, activityLogs: MOCK_ACTIVITY_LOGS, notifications: MOCK_NOTIFICATIONS }
+            : {
+              tasks: [],
+              categories: DEFAULT_CATEGORIES.map(category => ({
+                ...category,
+                userId: user.id,
+                createdAt: new Date().toISOString(),
+              })),
+              activityLogs: [],
+              notifications: [],
+            },
         });
       }
     }, 500);

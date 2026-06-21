@@ -72,7 +72,7 @@ export const LoginPage: React.FC = () => {
             {/* Demo Hint */}
             <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/40 rounded-2xl p-4 mb-6">
               <p className="text-xs text-indigo-700 dark:text-indigo-300 font-medium mb-1">🎉 Demo credentials pre-filled</p>
-              <p className="text-xs text-indigo-600 dark:text-indigo-400">Email: Tarun@Todo-Calender.io • Password:Todo@02</p>
+              <p className="text-xs text-indigo-600 dark:text-indigo-400">Email: Tarun@Todo-Calender.io • Password: password123</p>
             </div>
 
             {/* Error */}

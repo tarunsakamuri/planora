@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useTheme } from '../../context/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export const RegisterPage: React.FC = () => {
   const { register } = useAuth();
@@ -34,7 +35,7 @@ export const RegisterPage: React.FC = () => {
     setIsLoading(true);
     try {
       await register(formData);
-      navigate('/dashboard');
+      navigate('/login', { replace: true, state: { email: formData.email } });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {

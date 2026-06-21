@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Mail, Camera, Lock, Save, Shield, LogOut, Trash2, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTasks } from '../context/TaskContext';
@@ -19,6 +19,10 @@ export const ProfilePage: React.FC = () => {
   const [profileData, setProfileData] = useState({ name: user?.name || '', email: user?.email || '' });
   const [passwordData, setPasswordData] = useState({ current: '', newPass: '', confirm: '' });
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setProfileData({ name: user?.name || '', email: user?.email || '' });
+  }, [user]);
   const [passwordError, setPasswordError] = useState('');
 
   // Stats

@@ -58,7 +58,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // ─── Mock Auth Functions ──────────────────────────────────────────────────────
 const MOCK_TOKEN = 'mock_jwt_token_Todo-Calender_2024';
-const MOCK_CREDENTIALS = { email: 'Tarun@Todo-Calender.io', password: 'password123' };
+const MOCK_CREDENTIALS = { email: 'admin@gmail.com', password: 'admin@1702' };
 const REGISTERED_USERS_KEY = 'Todo-Calender_registered_users';
 
 // ─── Provider ────────────────────────────────────────────────────────────────
@@ -84,15 +84,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Check registered users first
       const registeredUsers = storage.get<Array<{email: string; password: string; user: User}>>(REGISTERED_USERS_KEY, []);
-      const registeredUser = registeredUsers.find(u => u.email === credentials.email && u.password === credentials.password);
+      const registeredUser = registeredUsers.find(u => u.email === credentials.email);
 
       let user: User;
       if (registeredUser) {
+        if (registeredUser.password !== credentials.password) {
+          throw new Error('Incorrect password. Enter a valid password.');
+        }
         user = registeredUser.user;
-      } else if (credentials.email === MOCK_CREDENTIALS.email && credentials.password === MOCK_CREDENTIALS.password) {
+      } else if (credentials.email === MOCK_CREDENTIALS.email) {
+        if (credentials.password !== MOCK_CREDENTIALS.password) {
+          throw new Error('Incorrect password. Enter a valid password.');
+        }
         user = MOCK_USER;
       } else {
-        throw new Error('Invalid email or password');
+        throw new Error('Email not found. Enter a valid email.');
       }
 
       const token = MOCK_TOKEN;
@@ -134,11 +140,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       registeredUsers.push({ email: credentials.email, password: credentials.password, user: newUser });
       storage.set(REGISTERED_USERS_KEY, registeredUsers);
 
-      const token = MOCK_TOKEN;
-      storage.set(STORAGE_KEYS.TOKEN, token);
-      storage.set(STORAGE_KEYS.USER, newUser);
-      dispatch({ type: 'LOGIN_SUCCESS', payload: { user: newUser, token } });
-      toast.success(`Welcome to Todo-Calender, ${newUser.name}! 🎉`);
+      toast.success(`Account created successfully! Please sign in.`);
+      dispatch({ type: 'SET_LOADING', payload: false });
     } catch (error) {
       dispatch({ type: 'SET_LOADING', payload: false });
       throw error;
@@ -155,15 +158,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUser = useCallback((userData: Partial<User>): void => {
     if (state.user) {
       const updatedUser = { ...state.user, ...userData };
+
+      const registeredUsers = storage.get<Array<{ email: string; password: string; user: User }>>(REGISTERED_USERS_KEY, []);
+      const userIndex = registeredUsers.findIndex(
+        u => u.user.id === state.user?.id || u.email === state.user?.email
+      );
+
+      if (userIndex !== -1) {
+        registeredUsers[userIndex] = {
+          ...registeredUsers[userIndex],
+          email: updatedUser.email || registeredUsers[userIndex].email,
+          user: updatedUser,
+        };
+        storage.set(REGISTERED_USERS_KEY, registeredUsers);
+      }
+
       storage.set(STORAGE_KEYS.USER, updatedUser);
       dispatch({ type: 'UPDATE_USER', payload: userData });
     }
   }, [state.user]);
 
-  const changePassword = useCallback(async (_currentPassword: string, _newPassword: string): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    toast.success('Password changed successfully');
-  }, []);
+  const changePassword = useCallback(async (currentPassword: string, newPassword: string): Promise<void> => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      const registeredUsers = storage.get<Array<{ email: string; password: string; user: User }>>(REGISTERED_USERS_KEY, []);
+      const userIndex = registeredUsers.findIndex(
+        u => u.user.id === state.user?.id || u.email === state.user?.email
+      );
+
+      if (userIndex !== -1) {
+        if (registeredUsers[userIndex].password !== currentPassword) {
+          throw new Error('Current password is incorrect');
+        }
+        registeredUsers[userIndex].password = newPassword;
+        storage.set(REGISTERED_USERS_KEY, registeredUsers);
+      } else if (state.user?.email === MOCK_CREDENTIALS.email) {
+        if (currentPassword !== MOCK_CREDENTIALS.password) {
+          throw new Error('Current password is incorrect');
+        }
+      }
+
+      toast.success('Password changed successfully');
+    } catch (error) {
+      throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  }, [state.user]);
 
   return (
     <AuthContext.Provider value={{ ...state, login, register, logout, updateUser, changePassword }}>

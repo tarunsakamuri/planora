@@ -4,7 +4,7 @@ import {
   CheckSquare, Clock, TrendingUp, AlertCircle, Target, Flame,
   Plus, ArrowRight, Calendar, BarChart2
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { useTasks } from '../context/TaskContext';
 import { useAuth } from '../context/AuthContext';
 import { StatCard } from '../components/ui/Card';
@@ -16,15 +16,14 @@ import { Modal } from '../components/ui/Modal';
 import { TaskForm } from '../components/tasks/TaskForm';
 import { isOverdue, isDueToday, formatRelativeTime } from '../lib/utils';
 import { Task } from '../types';
-import { PRIORITY_CONFIG } from '../lib/constants';
+import { PRIORITY_CONFIG, CHART_COLORS } from '../lib/constants';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
-import { MOCK_WEEKLY_CHART, MOCK_CATEGORY_CHART } from '../lib/mockData';
 
 export const DashboardPage: React.FC = () => {
-  const { tasks, isLoading, activityLogs } = useTasks();
+  const { tasks, categories, isLoading, activityLogs } = useTasks();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [showCreateModal, setShowCreateModal] = React.useState(false);
@@ -54,6 +53,33 @@ export const DashboardPage: React.FC = () => {
     const today = format(new Date(), 'yyyy-MM-dd');
     return tasks.filter(t => t.dueDate === today);
   }, [tasks]);
+
+  const weeklyChartData = useMemo(() => {
+    const days = eachDayOfInterval({ start: subDays(new Date(), 6), end: new Date() });
+    return days.map(day => {
+      const dayKey = format(day, 'yyyy-MM-dd');
+      const created = tasks.filter(t => format(new Date(t.createdAt), 'yyyy-MM-dd') === dayKey).length;
+      const completed = tasks.filter(
+        t => t.completedAt && format(new Date(t.completedAt), 'yyyy-MM-dd') === dayKey
+      ).length;
+      return { day: format(day, 'EEE'), created, completed };
+    });
+  }, [tasks]);
+
+  const categoryDistribution = useMemo(() => {
+    const counts = tasks.reduce<Record<string, number>>((acc, task) => {
+      acc[task.categoryId] = (acc[task.categoryId] || 0) + 1;
+      return acc;
+    }, {});
+
+    return categories
+      .map((category, index) => ({
+        name: category.name,
+        value: counts[category.id] || 0,
+        color: category.color || CHART_COLORS[index % CHART_COLORS.length],
+      }))
+      .filter(item => item.value > 0);
+  }, [categories, tasks]);
 
   const greeting = useMemo(() => {
     const h = new Date().getHours();
@@ -161,7 +187,7 @@ export const DashboardPage: React.FC = () => {
             <BarChart2 className="h-5 w-5 text-slate-400" />
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={MOCK_WEEKLY_CHART} barGap={4}>
+            <BarChart data={weeklyChartData} barGap={4}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:opacity-20" />
               <XAxis dataKey="day" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
@@ -184,23 +210,27 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="flex justify-center mb-4">
             <PieChart width={160} height={160}>
-              <Pie data={MOCK_CATEGORY_CHART} cx={80} cy={80} innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                {MOCK_CATEGORY_CHART.map((entry, i) => (
+              <Pie data={categoryDistribution} cx={80} cy={80} innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
+                {categoryDistribution.map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Pie>
             </PieChart>
           </div>
           <div className="space-y-2">
-            {MOCK_CATEGORY_CHART.map(item => (
-              <div key={item.name} className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="h-3 w-3 rounded-sm flex-shrink-0" style={{ backgroundColor: item.color }} />
-                  <span className="text-slate-600 dark:text-slate-400">{item.name}</span>
+            {categoryDistribution.length === 0 ? (
+              <div className="text-sm text-slate-500 dark:text-slate-400 text-center">No tasks assigned to categories yet.</div>
+            ) : (
+              categoryDistribution.map(item => (
+                <div key={item.name} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-sm flex-shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-slate-600 dark:text-slate-400">{item.name}</span>
+                  </div>
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">{item.value}</span>
                 </div>
-                <span className="font-semibold text-slate-700 dark:text-slate-300">{item.value}</span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

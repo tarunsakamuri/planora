@@ -1,28 +1,51 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useTheme } from '../../context/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
+import { storage } from '../../lib/utils';
 
 export const LoginPage: React.FC = () => {
+  const location = useLocation();
   const { login } = useAuth();
   const { toggleTheme, isDark } = useTheme();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('Tarun@Todo-Calender.io');
-  const [password, setPassword] = useState('password123');
+  const savedEmail = storage.get<string | null>('Todo-Calender_remember_email', null);
+  const registrationEmail = (location.state as { email?: string })?.email;
+  const [email, setEmail] = useState<string>(() => registrationEmail || savedEmail || 'admin@gmail.com');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState<boolean>(() => Boolean(savedEmail));
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(() => registrationEmail ? 'Account created successfully. Please login below.' : null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+      setError('Enter valid email');
+      return;
+    }
+
+    if (password.trim().length < 8) {
+      setError('Enter valid password');
+      return;
+    }
+
     setIsLoading(true);
     try {
       await login({ email, password });
+      if (rememberMe) {
+        storage.set('Todo-Calender_remember_email', email);
+      } else {
+        storage.remove('Todo-Calender_remember_email');
+      }
       navigate('/dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -72,8 +95,15 @@ export const LoginPage: React.FC = () => {
             {/* Demo Hint */}
             <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/40 rounded-2xl p-4 mb-6">
               <p className="text-xs text-indigo-700 dark:text-indigo-300 font-medium mb-1">🎉 Demo credentials pre-filled</p>
-              <p className="text-xs text-indigo-600 dark:text-indigo-400">Email: Tarun@Todo-Calender.io • Password: password123</p>
+              <p className="text-xs text-indigo-600 dark:text-indigo-400">Email:admin@gmail.com • Password:admin@1702</p>
             </div>
+
+            {/* Success */}
+            {successMessage && (
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/40 rounded-xl p-3 mb-4">
+                <p className="text-sm text-emerald-700 dark:text-emerald-200">{successMessage}</p>
+              </div>
+            )}
 
             {/* Error */}
             {error && (
@@ -87,7 +117,7 @@ export const LoginPage: React.FC = () => {
               <Input
                 label="Email Address"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="admin@gmail.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 leftIcon={<Mail className="h-4 w-4" />}
@@ -110,7 +140,12 @@ export const LoginPage: React.FC = () => {
 
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={e => setRememberMe(e.target.checked)}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
                   <span className="text-slate-600 dark:text-slate-400">Remember me</span>
                 </label>
                 <button type="button" className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
